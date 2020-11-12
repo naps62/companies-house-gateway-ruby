@@ -13,28 +13,28 @@ module CompaniesHouseGateway
         raise CompaniesHouseGatewayError.new(msg)
       end
 
-      response = @connection.post do |request|
+      response = @connection.post { |request|
         request.path = @config[:api_endpoint]
         request.body = build_request_xml(request_type, request_data).to_s
         request.options.open_timeout = @config[:open_timeout]
         request.options.timeout = @config[:timeout]
-      end
+      }
       @config[:raw] ? response : response.body
-    rescue Faraday::Error::ClientError => e
+    rescue Faraday::ServerError, Faraday::ClientError => e
       if e.response.nil?
         raise CompaniesHouseGatewayError.new
       else
         raise CompaniesHouseGatewayError.new(e.response[:body],
-                                            e.response[:status],
-                                            e.response)
+          e.response[:status],
+          e.response)
       end
     end
 
     # Compile the complete XML request to send to Companies House
-    def build_request_xml(request_type, request_data={})
+    def build_request_xml(request_type, request_data = {})
       transaction_id = (Time.now.to_f * 100).to_i
 
-      builder = Nokogiri::XML::Builder.new do |xml|
+      builder = Nokogiri::XML::Builder.new { |xml|
         xml.GovTalkMessage(header_namespace) do
           xml.EnvelopeVersion "2.0"
           xml.Header do
@@ -46,7 +46,7 @@ module CompaniesHouseGateway
             request_body(xml, request_type, request_data)
           end
         end
-      end
+      }
       builder.doc
     end
 
@@ -54,12 +54,12 @@ module CompaniesHouseGateway
 
     def header_namespace
       {
-        'xmlns'              => "http://www.govtalk.gov.uk/CM/envelope",
-        'xmlns:dsig'         => "http://www.w3.org/2000/09/xmldsig#",
-        'xmlns:gt'           => "http://www.govtalk.gov.uk/CM/core",
-        'xmlns:xsi'          => "http://www.w3.org/2001/XMLSchema-instance",
-        'xsi:schemaLocation' => "http://www.govtalk.gov.uk/CM/envelope " +
-                                "http://xmlgw.companieshouse.gov.uk/v1-1/schema/Egov_ch-v2-0.xsd"
+        "xmlns" => "http://www.govtalk.gov.uk/CM/envelope",
+        "xmlns:dsig" => "http://www.w3.org/2000/09/xmldsig#",
+        "xmlns:gt" => "http://www.govtalk.gov.uk/CM/core",
+        "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation" => "http://www.govtalk.gov.uk/CM/envelope " +
+          "http://xmlgw.companieshouse.gov.uk/v1-1/schema/Egov_ch-v2-0.xsd"
       }
     end
 
@@ -99,9 +99,9 @@ module CompaniesHouseGateway
 
     def request_namespace(request_type)
       {
-        'xmlns:xsi'          => "http://www.w3.org/2001/XMLSchema-instance",
-        'xsi:schemaLocation' => "http://xmlgw.companieshouse.gov.uk/v1-0/schema " +
-                                "http://xmlgw.companieshouse.gov.uk/v1-0/schema/#{request_type}.xsd"
+        "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation" => "http://xmlgw.companieshouse.gov.uk/v1-0/schema " +
+          "http://xmlgw.companieshouse.gov.uk/v1-0/schema/#{request_type}.xsd"
       }
     end
 
